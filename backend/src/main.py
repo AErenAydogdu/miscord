@@ -418,6 +418,7 @@ async def leave_server(request: web.Request) -> web.Response:
     return web.json_response(serialize_record(server))
 
 
+@routes.post("/v1/message")
 async def create_message(request: web.Request) -> web.Response:
     parameters = await request.json()
 
@@ -431,7 +432,7 @@ async def create_message(request: web.Request) -> web.Response:
     connection = await connection_manager.get_connection()
 
     user = await connection.fetchrow("""
-        select u.id as id, u.username as username
+        select u.id as id
         from "user" u left join "session" s on u.id = s."user"
         where s.token = $1
     """, request.headers.get("Authorization"))
@@ -456,7 +457,7 @@ async def create_message(request: web.Request) -> web.Response:
     return web.json_response(serialize_record(message))
 
 
-
+@routes.patch("/v1/message")
 async def edit_message(request: web.Request) -> web.Response:
     parameters = await request.json()
 
