@@ -2,6 +2,7 @@ import asyncio
 
 import asyncpg
 from aiohttp import web
+from argon2 import PasswordHasher
 
 routes = web.RouteTableDef()
 
@@ -45,9 +46,38 @@ def json_error(message: str, status: int = 400) -> web.Response:
     return web.json_response({"error": message}, status=status)
 
 
+@routes.post("/v1/auth/register")
+async def auth_register(request: web.Request) -> web.Response:
+    parameters = await request.json()
+
+    if "username" not in parameters:
+        return json_error("username is required")
+    if "password" not in parameters:
+        return json_error("password is required")
+
+    connection = await connection_manager.get_connection()
+
+    exists = await connection.fetchval("""
+        select exists(select 1 from "user" where username = $1) as "exists"
+    """, parameters["username"])
+    if exists:
+        return json_error("username already exists")
+
+    password_hash = PasswordHasher().hash(parameters.get("password"))
+    insert = await connection.fetchrow("""
+        insert into "user" (username, password) values ($1, $2)
+        returning id, username
+    """, parameters["username"], password_hash)
+
+    return web.json_response({
+        "id": insert.get("id"),
+        "username": insert.get("username"),
+    })
+
+
 @routes.post("/v1/auth/login")
 async def auth_login(request: web.Request) -> web.Response:
-    parameters = request.json()
+    parameters = await request.json()
 
     if "username" not in parameters:
         return json_error("username is required")
