@@ -456,6 +456,57 @@ async def create_message(request: web.Request) -> web.Response:
     return web.json_response(serialize_record(message))
 
 
+
+async def edit_message(request: web.Request) -> web.Response:
+    parameters = await request.json()
+
+    if "Authorization" not in request.headers:
+        return json_error("missing Authorization header")
+    if "content" not in parameters:
+        return json_error("content is required")
+    if "id" not in parameters:
+        return json_error("id is required")
+
+    connection = await connection_manager.get_connection()
+
+    user = await connection.fetchrow("""
+        select u.id as id
+        from "user" u left join "session" s on u.id = s."user"
+        where s.token = $1
+    """, request.headers.get("Authorization"))
+
+    if not user:
+        return json_error("invalid token")
+
+    message = await connection.fetchrow("""
+        select member
+        from message
+        where id = $1
+    """, parameters.get("id"))
+
+    if not message:
+        return json_error("message not found")
+
+    if message.get("member") != user.get("id"):
+        return json_error("you are not the owner of this message")
+
+    member = await connection.fetchrow("""
+        select 1
+        from member
+        where "user" = $1 and server = $2
+    """, user.get("id"), parameters.get("server"))
+    if not member:
+        return json_error("not a member of this server")
+
+    message = await connection.fetchrow("""
+        update message
+        set content = $1
+        where id = $2
+        returning *
+    """, parameters.get("content"), parameters.get("id"))
+
+    return web.json_response(serialize_record(message))
+
 def main():
     app = web.Application()
     app.add_routes(routes)
