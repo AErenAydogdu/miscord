@@ -327,7 +327,7 @@ async def create_invite(request: web.Request) -> web.Response:
     return web.json_response(serialize_record(invite))
 
 
-@routes.post("/v1/join")
+@routes.post("/v1/member")
 async def join_server(request: web.Request) -> web.Response:
     parameters = await request.json()
 
@@ -372,6 +372,50 @@ async def join_server(request: web.Request) -> web.Response:
 
     return web.json_response(serialize_record(server))
 
+
+@routes.delete("/v1/member")
+async def leave_server(request: web.Request) -> web.Response:
+    parameters = await request.json()
+
+    if "Authorization" not in request.headers:
+        return json_error("missing Authorization header")
+    if "server" not in parameters:
+        return json_error("server is required")
+
+    connection = await connection_manager.get_connection()
+
+    user = await connection.fetchrow("""
+        select u.id as id
+        from "user" u left join "session" s on u.id = s."user"
+        where s.token = $1
+    """, request.headers.get("Authorization"))
+
+    if not user:
+        return json_error("invalid token")
+
+    member = await connection.fetchrow("""
+        select 1
+        from member
+        where "user" = $1 and server = $2
+    """, user.get("id"), parameters.get("server"))
+    if not member:
+        return json_error("not a member of this server")
+
+    server = await connection.fetchrow("""
+        select id
+        from server
+        where id = $1
+    """, parameters.get("server"))
+
+    if not server:
+        return json_error("server not found")
+
+    await connection.execute("""
+        delete from member
+        where "user" = $1 and server = $2
+    """, user.get("id"), server.get("id"))
+
+    return web.json_response(serialize_record(server))
 
 def main():
     app = web.Application()
