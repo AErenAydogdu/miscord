@@ -137,6 +137,21 @@ async def auth_login(request: web.Request) -> web.Response:
     })
 
 
+@routes.post("/v1/auth/logout")
+async def auth_logout(request: web.Request) -> web.Response:
+    if "Authorization" not in request.headers:
+        return json_error("missing Authorization header")
+
+    connection = await connection_manager.get_connection()
+
+    await connection.fetchrow("""
+        delete from session
+        where token = $1
+    """, request.headers.get("Authorization"))
+
+    return web.Response(status=204)
+
+
 @routes.post("/v1/server")
 async def server_create(request: web.Request) -> web.Response:
     parameters = await request.json()
