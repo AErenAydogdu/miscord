@@ -327,6 +327,52 @@ async def create_invite(request: web.Request) -> web.Response:
     return web.json_response(serialize_record(invite))
 
 
+@routes.post("/v1/join")
+async def join_server(request: web.Request) -> web.Response:
+    parameters = await request.json()
+
+    if "Authorization" not in request.headers:
+        return json_error("missing Authorization header")
+    if "code" not in parameters:
+        return json_error("code is required")
+
+    connection = await connection_manager.get_connection()
+
+    user = await connection.fetchrow("""
+        select u.id as id
+        from "user" u left join "session" s on u.id = s."user"
+        where s.token = $1
+    """, request.headers.get("Authorization"))
+
+    if not user:
+        return json_error("invalid token")
+
+    invite = await connection.fetchrow("""
+        select server
+        from invite
+        where code = $1
+    """, parameters.get("code"))
+
+    if not invite:
+        return json_error("invite not found")
+
+    server = await connection.fetchrow("""
+        select *
+        from server
+        where id = $1
+    """, invite.get("server"))
+
+    if not server:
+        return json_error("server not found")
+
+    await connection.execute("""
+        insert into member ("user", server)
+        values ($1, $2)
+    """, user.get("id"), server.get("id"))
+
+    return web.json_response(serialize_record(server))
+
+
 def main():
     app = web.Application()
     app.add_routes(routes)
