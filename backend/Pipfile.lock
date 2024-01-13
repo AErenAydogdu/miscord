@@ -1,13 +1,10 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "f582a1cf28cc9172edff396a2b0cf2d7dd3925ef62d10634d14f989bb1135945"
+            "sha256": "7cce41e9f5084dd7ae7f27b3506d41709c80c9d0164c89eb128a129f5826a55d"
         },
         "pipfile-spec": 6,
-        "requires": {
-            "python_full_version": "3.12.1",
-            "python_version": "3.12"
-        },
+        "requires": {},
         "sources": [
             {
                 "name": "pypi",
@@ -17,6 +14,14 @@
         ]
     },
     "default": {
+        "async-timeout": {
+            "hashes": [
+                "sha256:4640d96be84d82d02ed59ea2b7105a0f7b33abe8703703cd0ab0bf87c427522f",
+                "sha256:7405140ff1230c310e51dc27b3145b9092d659ce68ff733fb0cefe3ee42be028"
+            ],
+            "markers": "python_full_version < '3.12.0'",
+            "version": "==4.0.3"
+        },
         "asyncpg": {
             "hashes": [
                 "sha256:0009a300cae37b8c525e5b449233d59cd9868fd35431abc470a3e364d2b85cb9",
@@ -62,7 +67,6 @@
                 "sha256:ff8e8109cd6a46ff852a5e6bab8b0a047d7ea42fcb7ca5ae6eaae97d8eacf397"
             ],
             "index": "pypi",
-            "markers": "python_full_version >= '3.8.0'",
             "version": "==0.29.0"
         }
     },
