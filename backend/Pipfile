@@ -5,5 +5,6 @@ name = "pypi"
 
 [packages]
 asyncpg = "*"
+aiohttp = {version = "*", extras = ["speedups"]}
 
 [dev-packages]
