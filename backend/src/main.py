@@ -1,5 +1,7 @@
 import asyncio
+import secrets
 
+import argon2.exceptions
 import asyncpg
 from aiohttp import web
 from argon2 import PasswordHasher
@@ -58,7 +60,7 @@ async def auth_register(request: web.Request) -> web.Response:
     connection = await connection_manager.get_connection()
 
     exists = await connection.fetchval("""
-        select exists(select 1 from "user" where username = $1) as "exists"
+        select exists(select 1 from "user" where username = $1)
     """, parameters["username"])
     if exists:
         return json_error("username already exists")
@@ -84,7 +86,45 @@ async def auth_login(request: web.Request) -> web.Response:
     if "password" not in parameters:
         return json_error("password is required")
 
-    return json_error("not implemented")
+    connection = await connection_manager.get_connection()
+
+    exists = await connection.fetchval("""
+        select exists(select 1 from "user" where username = $1)
+    """, parameters["username"])
+    if not exists:
+        return json_error("username does not exist")
+
+    user = await connection.fetchrow("""
+        select id, username, password
+        from "user"
+        where username = $1
+    """, parameters["username"])
+
+    try:
+        PasswordHasher().verify(
+            user.get("password"),
+            parameters.get("password")
+        )
+    except argon2.exceptions.VerifyMismatchError:
+        return json_error("password is incorrect")
+
+    token = secrets.token_hex(32)
+
+    await connection.fetchrow(
+        """
+            insert into session ("user", token, ip, user_agent)
+            values ($1, $2, $3, $4)
+        """,
+        user.get("id"),
+        token,
+        request.remote,
+        request.headers.get("User-Agent")
+    )
+
+    return web.json_response({
+        "username": user.get("username"),
+        "token": token,
+    })
 
 
 @routes.get("/v1/debug/users")
