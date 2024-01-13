@@ -557,6 +557,58 @@ async def delete_message(request: web.Request) -> web.Response:
 
     return web.json_response(serialize_record(message))
 
+
+@routes.get("/v1/message")
+async def list_message(request: web.Request) -> web.Response:
+    parameters = await request.json()
+
+    if "Authorization" not in request.headers:
+        return json_error("missing Authorization header")
+
+    if "server" not in parameters:
+        return json_error("server is required")
+
+    if "limit" not in parameters:
+        return json_error("limit is required")
+
+    if "offset" not in parameters:
+        return json_error("offset is required")
+
+    connection = await connection_manager.get_connection()
+
+    user = await connection.fetchrow("""
+        select u.id as id
+        from "user" u left join "session" s on u.id = s."user"
+        where s.token = $1
+    """, request.headers.get("Authorization"))
+
+    if not user:
+        return json_error("invalid token")
+
+    member = await connection.fetchrow("""
+        select 1
+        from member
+        where "user" = $1 and server = $2
+    """, user.get("id"), parameters.get("server"))
+    if not member:
+        return json_error("not a member of this server")
+
+    messages = await connection.fetch("""
+        select *
+        from message
+        where server = $1
+        order by id desc
+        limit $2 offset $3
+    """, parameters.get("server"), parameters.get("limit"), parameters.get("offset"))
+
+    return web.json_response({
+        "messages": [
+            serialize_record(message)
+            for message in messages
+        ]
+    })
+
+
 def main():
     app = web.Application()
     app.add_routes(routes)
