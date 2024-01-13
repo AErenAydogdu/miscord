@@ -1,5 +1,6 @@
 import asyncio
 import secrets
+import datetime
 
 import argon2.exceptions
 import asyncpg
@@ -46,6 +47,14 @@ connection_manager = DbConnectionManager(
 
 def json_error(message: str, status: int = 400) -> web.Response:
     return web.json_response({"error": message}, status=status)
+
+
+def serialize_record(record: asyncpg.Record) -> dict:
+    record = dict(record)
+    for key, value in record.items():
+        if isinstance(value, datetime.datetime):
+            record[key] = value.isoformat()
+    return record
 
 
 @routes.post("/v1/auth/register")
@@ -124,6 +133,149 @@ async def auth_login(request: web.Request) -> web.Response:
     return web.json_response({
         "username": user.get("username"),
         "token": token,
+    })
+
+
+@routes.post("/v1/server")
+async def server_create(request: web.Request) -> web.Response:
+    parameters = await request.json()
+
+    if "Authorization" not in request.headers:
+        return json_error("missing Authorization header")
+    if "name" not in parameters:
+        return json_error("name is required")
+    if "description" not in parameters:
+        return json_error("description is required")
+
+    connection = await connection_manager.get_connection()
+
+    user = await connection.fetchrow("""
+        select u.id as id
+        from "user" u left join "session" s on u.id = s."user"
+        where s.token = $1
+    """, request.headers.get("Authorization"))
+
+    if not user:
+        return json_error("invalid token")
+
+    server = await connection.fetchrow("""
+        insert into server (name, description, owner)
+        values ($1, $2, $3)
+        returning *
+    """, parameters["name"], parameters["description"], user.get("id"))
+
+    return web.json_response(serialize_record(server))
+
+
+@routes.delete("/v1/server")
+async def server_delete(request: web.Request) -> web.Response:
+    parameters = await request.json()
+
+    if "Authorization" not in request.headers:
+        return json_error("missing Authorization header")
+    if "id" not in parameters:
+        return json_error("id is required")
+
+    connection = await connection_manager.get_connection()
+
+    user = await connection.fetchrow("""
+        select u.id as id
+        from "user" u left join "session" s on u.id = s."user"
+        where s.token = $1
+    """, request.headers.get("Authorization"))
+
+    if not user:
+        return json_error("invalid token")
+
+    server = await connection.fetchrow("""
+        select owner
+        from server
+        where id = $1
+    """, parameters.get("id"))
+
+    if not server:
+        return json_error("server not found")
+
+    if server.get("owner") != user.get("id"):
+        return json_error("you are not the owner of this server")
+
+    server = await connection.fetchrow("""
+        delete from server where id = $1
+        returning *
+    """, parameters["id"])
+
+    return web.json_response(serialize_record(server))
+
+
+@routes.patch("/v1/server")
+async def server_patch(request: web.Request) -> web.Response:
+    parameters = await request.json()
+
+    if "Authorization" not in request.headers:
+        return json_error("missing Authorization header")
+    if "id" not in parameters:
+        return json_error("id is required")
+
+    connection = await connection_manager.get_connection()
+
+    user = await connection.fetchrow("""
+        select u.id as id
+        from "user" u left join "session" s on u.id = s."user"
+        where s.token = $1
+    """, request.headers.get("Authorization"))
+
+    server = await connection.fetchrow("""
+        select name, description, owner
+        from server
+        where id = $1
+    """, parameters["id"])
+
+    if not server:
+        return json_error("server not found")
+
+    if server.get("owner") != user.get("id"):
+        return json_error("you are not the owner of this server")
+
+    new_name = parameters.get("name") or server.get("name")
+    new_description = parameters.get("description") or server.get("description")
+
+    server = await connection.fetchrow("""
+        update server
+        set name = $1, description = $2
+        where id = $3
+        returning *
+    """, new_name, new_description, parameters["id"])
+
+    return web.json_response(serialize_record(server))
+
+
+@routes.get("/v1/server")
+async def server_get(request: web.Request) -> web.Response:
+    if "Authorization" not in request.headers:
+        return json_error("missing Authorization header")
+
+    connection = await connection_manager.get_connection()
+
+    user = await connection.fetchrow("""
+        select u.id as id
+        from "user" u left join "session" s on u.id = s."user"
+        where s.token = $1
+    """, request.headers.get("Authorization"))
+
+    if not user:
+        return json_error("invalid token")
+
+    servers = await connection.fetch("""
+        select *
+        from server
+        where owner = $1
+    """, user.get("id"))
+
+    return web.json_response({
+        "owner": [
+            serialize_record(server)
+            for server in servers
+        ]
     })
 
 
