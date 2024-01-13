@@ -1,6 +1,7 @@
 import asyncio
 import secrets
 import datetime
+import string
 
 import argon2.exceptions
 import asyncpg
@@ -277,6 +278,53 @@ async def server_get(request: web.Request) -> web.Response:
             for server in servers
         ]
     })
+
+@routes.post("/v1/invite")
+async def create_invite(request: web.Request) -> web.Response:
+    parameters = await request.json()
+
+    if "Authorization" not in request.headers:
+        return json_error("missing Authorization header")
+    if "server" not in parameters:
+        return json_error("server is required")
+
+    connection = await connection_manager.get_connection()
+
+    user = await connection.fetchrow("""
+        select u.id as id
+        from "user" u left join "session" s on u.id = s."user"
+        where s.token = $1
+    """, request.headers.get("Authorization"))
+
+    if not user:
+        return json_error("invalid token")
+
+    server = await connection.fetchrow("""
+        select id, owner
+        from server
+        where id = $1
+    """, parameters.get("server"))
+
+    if not server:
+        return json_error("server not found")
+
+    if server.get("owner") != user.get("id"):
+        return json_error("you are not the owner of this server")
+
+    code = "".join(
+        [
+            secrets.choice(string.ascii_uppercase + string.digits)
+            for _ in range(6)
+        ]
+    )
+
+    invite = await connection.fetchrow("""
+        insert into invite (server, code)
+        values ($1, $2)
+        returning *
+    """, parameters.get("server"), code)
+
+    return web.json_response(serialize_record(invite))
 
 
 def main():
