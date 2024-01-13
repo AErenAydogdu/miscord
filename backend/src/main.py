@@ -279,19 +279,6 @@ async def server_get(request: web.Request) -> web.Response:
     })
 
 
-@routes.get("/v1/debug/users")
-async def debug(request: web.Request) -> web.Response:
-    conn = await connection_manager.get_connection()
-
-    row = await conn.fetch("""
-        select * from "user"
-    """)
-
-    return web.json_response(
-        [row.get("username") for row in row]
-    )
-
-
 def main():
     app = web.Application()
     app.add_routes(routes)
