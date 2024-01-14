@@ -47,9 +47,11 @@
 </script>
 
 <style>
-    :global(.content) {
-        display: grid;
-        place-items: center;
+    .center {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
     }
 
     form {
@@ -68,7 +70,7 @@
     }
 </style>
 
-<form id="form">
+<form id="form" class="center">
     {#if error_message}
         <p class="toast error" transition:slide>{error_message}</p>
     {/if}

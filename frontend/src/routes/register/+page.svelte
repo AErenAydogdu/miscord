@@ -36,9 +36,11 @@
 </script>
 
 <style>
-    :global(.content) {
-        display: grid;
-        place-items: center;
+    .center {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
     }
 
     form {
@@ -58,7 +60,7 @@
 </style>
 
 {#if !successful}
-<form id="form">
+<form id="form" class="center">
     {#if error_message}
         <p class="toast error" transition:slide>{error_message}</p>
     {/if}
@@ -77,7 +79,7 @@
     <a href="/login" class="deemphasis">login instead?</a>
 </form>
 {:else}
-    <div class="centered">
+    <div class="centered center">
         <p>Successfully registered!</p>
         <button on:click={() => goto("/login")}>Login</button>
     </div>

@@ -5,7 +5,10 @@
 
     async function logout() {
         await fetch(ROOT + "/v1/auth/logout", {
-            method: "POST"
+            method: "POST",
+            headers: {
+                Authorization: $userStore?.token ?? "",
+            }
         });
 
         userStore.set(null);
@@ -29,13 +32,14 @@
         padding-inline: 1em;
 
         display: flex;
-        justify-content: end;
+        justify-content: start;
         align-items: end;
         gap: 0.75em;
     }
 
     .content {
         flex-grow: 1;
+        position: relative;
     }
 
     footer {
@@ -47,9 +51,14 @@
 
         text-align: center;
     }
+
+    .brand {
+        margin-right: auto;
+    }
 </style>
 
 <header>
+    <a href="/" class="brand">Miscord</a>
     {#if $userStore}
         <span>
             <span class="deemphasis">Logged in as</span>
