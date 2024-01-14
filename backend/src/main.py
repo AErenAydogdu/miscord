@@ -583,19 +583,20 @@ async def delete_message(request: web.Request) -> web.Response:
 
 @routes.get("/v1/message")
 async def list_message(request: web.Request) -> web.Response:
-    parameters = await request.json()
-
     if "Authorization" not in request.headers:
         return json_error("missing Authorization header")
 
-    if "server" not in parameters:
+    if "server" not in request.query:
         return json_error("server is required")
+    server_id = int(request.query["server"])
 
-    if "limit" not in parameters:
+    if "limit" not in request.query:
         return json_error("limit is required")
+    limit = int(request.query["limit"])
 
-    if "offset" not in parameters:
+    if "offset" not in request.query:
         return json_error("offset is required")
+    offset = int(request.query["offset"])
 
     connection = await connection_manager.get_connection()
 
@@ -612,17 +613,18 @@ async def list_message(request: web.Request) -> web.Response:
         select 1
         from member
         where "user" = $1 and server = $2
-    """, user.get("id"), parameters.get("server"))
+    """, user.get("id"), server_id)
     if not member:
         return json_error("not a member of this server")
 
     messages = await connection.fetch("""
-        select *
-        from message
-        where server = $1
-        order by id desc
+        select m.*, u.username as username
+        from message m
+        right join "user" u on m.author = u.id
+        where m.server = $1
+        order by m.id desc
         limit $2 offset $3
-    """, parameters.get("server"), parameters.get("limit"), parameters.get("offset"))
+    """, server_id, limit, offset)
 
     return web.json_response({
         "messages": [
