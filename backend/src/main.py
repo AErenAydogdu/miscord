@@ -3,6 +3,7 @@ import secrets
 import datetime
 import string
 
+import aiohttp_cors
 import argon2.exceptions
 import asyncpg
 from aiohttp import web
@@ -640,6 +641,19 @@ async def list_message(request: web.Request) -> web.Response:
 def main():
     app = web.Application()
     app.add_routes(routes)
+
+    resource_options = {
+            "http://localhost:5173": aiohttp_cors.ResourceOptions(
+                allow_credentials=True,
+                allow_headers="*",
+                allow_methods="*",
+            )
+        }
+
+    cors = aiohttp_cors.setup(app, defaults=resource_options)
+
+    for route in list(app.router.routes()):
+        cors.add(route, resource_options)
 
     async def on_shutdown(_):
         await connection_manager.close_connection()
