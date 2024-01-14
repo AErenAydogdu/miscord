@@ -30,10 +30,7 @@
                 token: string
             };
 
-            userStore.set({
-                username: res_json.username,
-                token: res_json.token,
-            })
+            userStore.set(res_json);
 
             await goto("/");
         } else {
