@@ -1,0 +1,28 @@
+:root {
+
+}
+
+body {
+    font-size: 1.2em;
+}
+
+.toast {
+    border: 1px solid #67061e;
+    background-color: #440212;
+    padding-block: 0.5em;
+    padding-inline: 1em;
+}
+
+.deemphasis {
+    opacity: 0.8;
+    font-size: 0.8em;
+}
+
+input, textarea, button {
+    font-size: 1em;
+    font-family: inherit;
+}
+
+.centered {
+    text-align: center;
+}
