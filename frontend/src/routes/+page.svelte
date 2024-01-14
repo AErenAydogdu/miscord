@@ -22,9 +22,17 @@
                         <a href="/chat/{server.id}">{server.name}</a>
                     </li>
                 {/each}
+                <li>
+                    <a href="/chat/create">+: Create your own...</a>
+                </li>
+                <li>
+                    <a href="/chat/join">+: Join using invite code...</a>
+                </li>
             </ul>
         {:else}
-            <p>Loading...</p>
+            <ul>
+                <li>Loading...</li>
+            </ul>
         {/if}
     {:else}
         <h1>Miscord</h1>
