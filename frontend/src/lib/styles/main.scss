@@ -1,8 +1,13 @@
-:root {
-
+@font-face {
+    font-family: "Inter";
+    src: url("/fonts/Inter.var.woff2") format("woff2");
+    font-weight: 100 900;
+    font-display: swap;
+    font-feature-settings: "cv02", "cv05";
 }
 
 body {
+    font-family: "Inter", sans-serif;
     font-size: 1.2em;
 }
 
