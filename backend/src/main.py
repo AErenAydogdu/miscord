@@ -19,23 +19,15 @@ class DbConnectionManager:
         self.user = user
         self.password = password
         self.database = database
-        self.connections = []
 
     async def get_connection(self) -> asyncpg.connection.Connection:
-        connection = await asyncpg.connect(
+        return await asyncpg.connect(
             host=self.host,
             port=self.port,
             user=self.user,
             password=self.password,
             database=self.database,
         )
-        self.connections.append(connection)
-        return connection
-
-    async def close_connections(self):
-        for connection in self.connections:
-            await connection.close()
-        self.connections = []
 
 
 connection_manager = DbConnectionManager(
@@ -650,11 +642,6 @@ def main():
 
     for route in list(app.router.routes()):
         cors.add(route, resource_options)
-
-    async def on_shutdown(_):
-        await connection_manager.close_connections()
-
-    app.on_shutdown.append(on_shutdown)
 
     web.run_app(app, loop=asyncio.get_event_loop())
 
