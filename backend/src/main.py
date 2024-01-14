@@ -182,6 +182,11 @@ async def server_create(request: web.Request) -> web.Response:
         returning *
     """, parameters["name"], parameters["description"], user.get("id"))
 
+    await connection.execute("""
+        insert into member ("user", server)
+        values ($1, $2)
+    """, user.get("id"), server.get("id"))
+
     return web.json_response(serialize_record(server))
 
 
