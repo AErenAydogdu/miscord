@@ -4,7 +4,8 @@
 
 <style>
     .content {
-        margin-inline: 1em;
+        margin-inline: auto;
+        max-width: 72ch;
     }
 </style>
 
