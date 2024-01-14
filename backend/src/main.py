@@ -626,6 +626,11 @@ async def list_message(request: web.Request) -> web.Response:
     })
 
 
+@routes.get("/eggs")
+async def eggs(_: web.Request) -> web.Response:
+    return web.Response(text="Emre Özcan & A. Eren Aydoğdu")
+
+
 def main():
     app = web.Application()
     app.add_routes(routes)
