@@ -19,23 +19,23 @@ class DbConnectionManager:
         self.user = user
         self.password = password
         self.database = database
-        self.conn = None
+        self.connections = []
 
     async def get_connection(self) -> asyncpg.connection.Connection:
-        if self.conn is None:
-            self.conn = await asyncpg.connect(
-                host=self.host,
-                port=self.port,
-                user=self.user,
-                password=self.password,
-                database=self.database,
-            )
-        return self.conn
+        connection = await asyncpg.connect(
+            host=self.host,
+            port=self.port,
+            user=self.user,
+            password=self.password,
+            database=self.database,
+        )
+        self.connections.append(connection)
+        return connection
 
-    async def close_connection(self):
-        if self.conn is not None:
-            await self.conn.close()
-            self.conn = None
+    async def close_connections(self):
+        for connection in self.connections:
+            await connection.close()
+        self.connections = []
 
 
 connection_manager = DbConnectionManager(
@@ -652,7 +652,7 @@ def main():
         cors.add(route, resource_options)
 
     async def on_shutdown(_):
-        await connection_manager.close_connection()
+        await connection_manager.close_connections()
 
     app.on_shutdown.append(on_shutdown)
 
