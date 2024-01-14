@@ -48,7 +48,7 @@
         flex-shrink: 1;
 
         border-top: 1px solid gray;
-        padding-block: 0.5em 5em;
+        padding-block: 0.5em;
         padding-inline: 1em;
 
         text-align: center;
