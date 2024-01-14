@@ -472,7 +472,7 @@ async def create_message(request: web.Request) -> web.Response:
         return json_error("not a member of this server")
 
     message = await connection.fetchrow("""
-        insert into message (member, server, content)
+        insert into message (author, server, content)
         values ($1, $2, $3)
         returning *
     """, user.get("id"), parameters.get("server"), parameters.get("content"))
@@ -503,7 +503,7 @@ async def edit_message(request: web.Request) -> web.Response:
         return json_error("invalid token")
 
     message = await connection.fetchrow("""
-        select member
+        select author
         from message
         where id = $1
     """, parameters.get("id"))
@@ -553,7 +553,7 @@ async def delete_message(request: web.Request) -> web.Response:
         return json_error("invalid token")
 
     message = await connection.fetchrow("""
-        select member
+        select author
         from message
         where id = $1
     """, parameters.get("id"))
