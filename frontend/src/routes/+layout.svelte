@@ -2,8 +2,10 @@
     import { userStore } from '$lib/userStore';
     import "$lib/styles/main.scss";
     import {ROOT} from "$lib/backend_location";
+    import {goto} from "$app/navigation";
 
     async function logout() {
+        await goto("/");
         await fetch(ROOT + "/v1/auth/logout", {
             method: "POST",
             headers: {
