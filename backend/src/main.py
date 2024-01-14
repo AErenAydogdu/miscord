@@ -60,6 +60,12 @@ async def auth_register(request: web.Request) -> web.Response:
     if "password" not in parameters:
         return json_error("password is required")
 
+    if len(parameters["username"]) < 3:
+        return json_error("username must be at least 3 characters")
+
+    if len(parameters["password"]) < 6:
+        return json_error("password must be at least 6 characters")
+
     connection = await connection_manager.get_connection()
 
     exists = await connection.fetchval("""
@@ -157,6 +163,9 @@ async def server_create(request: web.Request) -> web.Response:
     if "description" not in parameters:
         return json_error("description is required")
 
+    if not parameters["name"]:
+        return json_error("name must not be empty")
+
     connection = await connection_manager.get_connection()
 
     user = await connection.fetchrow("""
@@ -253,6 +262,9 @@ async def server_patch(request: web.Request) -> web.Response:
 
     new_name = parameters.get("name") or server.get("name")
     new_description = parameters.get("description") or server.get("description")
+
+    if not new_name:
+        return json_error("name must not be empty")
 
     server = await connection.fetchrow("""
         update server
@@ -379,6 +391,15 @@ async def join_server(request: web.Request) -> web.Response:
 
     if not server:
         return json_error("server not found")
+
+    member = await connection.fetchrow("""
+        select 1
+        from member
+        where "user" = $1 and server = $2
+    """, user.get("id"), server.get("id"))
+
+    if member:
+        return json_error("already a member of this server")
 
     await connection.execute("""
         insert into member ("user", server)
