@@ -133,6 +133,7 @@ async def auth_login(request: web.Request) -> web.Response:
     )
 
     return web.json_response({
+        "id": user.get("id"),
         "username": user.get("username"),
         "token": token,
     })
