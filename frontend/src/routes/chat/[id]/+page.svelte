@@ -1,5 +1,5 @@
 <script lang="ts">
-    import {userStore} from "$lib/userStore";
+    import {type Server, serverList, userStore} from "$lib/userStore";
     import {ROOT} from "$lib/backend_location";
     import {onMount} from "svelte";
     import {goto} from "$app/navigation";
@@ -11,6 +11,12 @@
     let message_input: HTMLInputElement;
     let send_button: HTMLButtonElement;
     let load_more_available: boolean = true;
+
+    let server: Server | null = null;
+    serverList.subscribe(s => {
+        if (s == null) return;
+        server = s.find(s => s.id == data!.id) ?? null;
+    });
 
     interface Message {
         id: number;
@@ -138,6 +144,13 @@
         <a href="/" class="deemphasis">« go back</a>
     </p>
 
+    {#if server}
+        <h1>{server?.name}</h1>
+        {#if server?.description}
+            <h2 class="deemphasis">{server.description}</h2>
+        {/if}
+    {/if}
+
     {#if error_message}
         <p class="toast">{error_message}</p>
     {/if}
@@ -148,7 +161,7 @@
         <div class="controls">
             <input
                     type="text"
-                    placeholder="Message chat"
+                    placeholder="Message {server?.name}"
                     bind:this={message_input}
             >
             <button
