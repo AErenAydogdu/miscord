@@ -288,12 +288,6 @@ async def server_get(request: web.Request) -> web.Response:
     if not user:
         return json_error("invalid token")
 
-    owned_servers = await connection.fetch("""
-        select *
-        from server
-        where owner = $1
-    """, user.get("id"))
-
     member_servers = await connection.fetch("""
         select s.*
         from member m
@@ -302,16 +296,10 @@ async def server_get(request: web.Request) -> web.Response:
     """, user.get("id"))
 
 
-    return web.json_response({
-        "owner": [
-            serialize_record(server)
-            for server in owned_servers
-        ],
-        "member": [
-            serialize_record(server)
-            for server in member_servers
-        ]
-    })
+    return web.json_response([
+        serialize_record(server)
+        for server in member_servers
+    ])
 
 
 @routes.post("/v1/invite")
