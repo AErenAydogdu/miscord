@@ -101,12 +101,48 @@
         message_input.value = "";
         message_input.focus();
     }
+
+    async function leave() {
+        const res = await fetch(ROOT + "/v1/member", {
+            method: "DELETE",
+            headers: {
+                Authorization: $userStore!.token,
+            },
+            body: JSON.stringify({
+                server: data!.id,
+            })
+        });
+
+        if (!res.ok) {
+            const json = await res.json();
+            error_message = json.error;
+            return;
+        }
+
+        await goto("/");
+    }
 </script>
 
 <style>
     .content {
         max-width: 72ch;
         margin-inline: auto;
+    }
+
+    .server-title {
+        position: relative;
+        margin-block: 0 0.5em;
+    }
+
+    .server-title h1 {
+        display: inline-block;
+        margin-block: 0;
+    }
+
+    .server-settings {
+        position: absolute;
+        right: 0;
+        bottom: 0;
     }
 
     .controls {
@@ -145,7 +181,20 @@
     </p>
 
     {#if server}
-        <h1>{server?.name}</h1>
+        <div class="server-title">
+            <h1>{server?.name}</h1>
+            {#if server?.owner === $userStore?.id}
+                <a
+                        href="/chat/{server.id}/settings"
+                        class="deemphasis server-settings"
+                >settings</a>
+            {:else}
+                <button
+                        on:click={leave}
+                        class="deemphasis server-settings"
+                >leave</button>
+            {/if}
+        </div>
         {#if server?.description}
             <h2 class="deemphasis">{server.description}</h2>
         {/if}
