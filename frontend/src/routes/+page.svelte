@@ -14,6 +14,9 @@
         <p>Here is a list of groups that you're a member of:</p>
         {#if $serverList}
             <ul>
+                {#if $serverList.length === 0}
+                    <li>None! Find invite codes from your friends or create your own!</li>
+                {/if}
                 {#each $serverList as server}
                     <li>
                         <a href="/chat/{server.id}">{server.name}</a>
